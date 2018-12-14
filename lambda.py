@@ -39,16 +39,36 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
 
 
 def handler(event, *_):
+    # Get args from event
     event = event or {}
     dryrun = event.get('dryrun') or False
     page_id = event.get('pageId') or FACEBOOK_PAGE_ID
     cal_id = event.get('calendarId') or GOOGLE_CALENDAR_ID
+
+    # Initialize facebook page & Google Calendar
     page = fest.FacebookPage(GRAPHAPI, page_id)
     gcal = fest.GoogleCalendar(CALENDARAPI, cal_id)
     page.logger.setLevel('INFO')
     gcal.logger.setLevel('INFO')
+
+    # Sync
     sync = gcal.sync(page, time_filter='upcoming').execute(dryrun=dryrun)
-    return sync.to_dict()
+
+    # Return referces to modified objects
+    resp = {
+        k: [
+            {
+                'google_id': x.get('id'),
+                'summary': x.get('summary'),
+                'htmlLink': x.get('htmlLink'),
+                'start': x.get('start', {}).get('dateTime'),
+                'end': x.get('end', {}).get('dateTime'),
+            }
+            for facebook_id, x in v.items()
+        ]
+        for k, v in sync.responses.items()
+    }
+    return resp
 
 
 if __name__ == '__main__':
