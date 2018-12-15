@@ -4,7 +4,7 @@ services:
     command: >
       sh -c "
         rm -rf build/* &&
-        pip install fest==5.0.0a5 -t build &&
+        pip install fest==5.0.0a6 -t build &&
         cp lambda.py build &&
         cd build &&
         zip -x '*.pyc' '*__pycache__/*' -r ../package.zip ./*

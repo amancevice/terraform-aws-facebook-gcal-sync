@@ -46,10 +46,10 @@
         },
         "fest": {
             "hashes": [
-                "sha256:ba512a30d8604ea4921a15d704cfe43877e8cc34815f08e5068a9025fa5a6c8c"
+                "sha256:7e231d67b36f4264cd3735aca6dca7ba9ec06e34c6965a710ce39375c24f2ba5"
             ],
             "index": "pypi",
-            "version": "==5.0.0a2"
+            "version": "==5.0.0a6"
         },
         "google-api-python-client": {
             "hashes": [
@@ -98,13 +98,6 @@
                 "sha256:a38a8811ea784c0136abfdba73963876328f66172db21a05a82f9515909bfb4e"
             ],
             "version": "==0.2.2"
-        },
-        "pytz": {
-            "hashes": [
-                "sha256:31cb35c89bd7d333cd32c5f278fca91b523b0834369e757f4c5641ea252236ca",
-                "sha256:8e0f8568c118d3077b46be7d654cc8167fa916092e28320cde048e54bfc9f1e6"
-            ],
-            "version": "==2018.7"
         },
         "requests": {
             "hashes": [
@@ -161,18 +154,18 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:1edb2ff716c2f840d1519f71f041489ed6bd1cf23dfac7a14d2910ebaf94499e",
-                "sha256:4d0efc0bf7cc22fa45a4f4614e53a8bcece142a14f9b88db1cc7d50c01b12280"
+                "sha256:0aef5adf904638bf9bc053efaf182d8dc8647d72d9d7974173b77eab29f67254",
+                "sha256:90911996038f88f90eef8d55689c4c4843daec94a48b56aba4b3399306dd4f2a"
             ],
             "index": "pypi",
-            "version": "==1.9.64"
+            "version": "==1.9.66"
         },
         "botocore": {
             "hashes": [
-                "sha256:85291fff27fbf413095be248590bfbaafa32f3fcc45db4d6f2efe2d6f0542978",
-                "sha256:93dc0bea94d0ee785581f297a11311739f51d6ede8c9026a015dc37e6e014694"
+                "sha256:25c39ecc71356287cf79d66981ec77deca374e28043b19b2f818d48aa34272a1",
+                "sha256:419e1a6a1829c49c7aad30efc1e4a9435ad36573ca6a14d94940e7f302aa234a"
             ],
-            "version": "==1.12.64"
+            "version": "==1.12.66"
         },
         "decorator": {
             "hashes": [

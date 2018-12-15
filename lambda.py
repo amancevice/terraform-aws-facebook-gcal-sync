@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime
 
 import boto3
 import facebook
@@ -61,8 +62,8 @@ def handler(event, *_):
                 'google_id': x.get('id'),
                 'summary': x.get('summary'),
                 'htmlLink': x.get('htmlLink'),
-                'start': x.get('start', {}).get('dateTime'),
-                'end': x.get('end', {}).get('dateTime'),
+                'start': event_time(x.get('start')),
+                'end': event_time(x.get('end')),
             }
             for facebook_id, x in v.items()
         ]
@@ -71,5 +72,12 @@ def handler(event, *_):
     return resp
 
 
+def event_time(time):
+    try:
+        return time['dateTime']
+    except KeyError:
+        return time['date']
+
+
 if __name__ == '__main__':
-    sync = handler({'dryrun': True})
+    event = handler({'dryrun': True})
