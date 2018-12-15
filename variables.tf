@@ -1,16 +1,21 @@
 variable create_event_target {
-  description = "Create CloudWatch Event Target."
+  description = "Create CloudWatch event target."
   default     = false
 }
 
 variable event_rule_is_enabled {
-  description = "Flag to enable/disable CloudWatch Event Rule."
+  description = "Flag to enable/disable CloudWatch event rule."
   default     = true
 }
 
 variable event_rule_schedule_expression {
   description = "CloudWatch event rule schedule expression"
   default     = "rate(1 hour)"
+}
+
+variable event_target_input {
+  description = "CloudWatch event target input JSON."
+  default     = "{}"
 }
 
 variable facebook_page_id {

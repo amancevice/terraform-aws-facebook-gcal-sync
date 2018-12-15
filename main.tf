@@ -64,7 +64,7 @@ resource aws_cloudwatch_event_rule rule {
 resource aws_cloudwatch_event_target target {
   count = "${var.create_event_target}"
   arn   = "${aws_lambda_function.lambda.arn}"
-  input = "{}"
+  input = "${var.event_target_input}"
   rule  = "${aws_cloudwatch_event_rule.rule.name}"
 }
 
