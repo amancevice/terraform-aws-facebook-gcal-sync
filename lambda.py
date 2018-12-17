@@ -60,6 +60,7 @@ def handler(event, *_):
         k: [
             {
                 'google_id': x.get('id'),
+                'location': x.get('location'),
                 'summary': x.get('summary'),
                 'htmlLink': x.get('htmlLink'),
                 'start': event_time(x.get('start')),
