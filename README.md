@@ -11,12 +11,20 @@ One should contain your facebook Graph API access token as a string (not JSON).
 The other should contain you Google Service Account credentials JSON.
 
 ```terraform
+module secrets {
+  source                  = "amancevice/facebook-gcal-sync-secrets/aws"
+  facebook_page_token     = "<your-page-access-token>"
+  facebook_secret_name    = "facebook/MyPage"
+  google_secret_name      = "google/MySvcAcct"
+  google_credentials_file = "<path-to-credentials-JSON-file>"
+}
+
 module facebook_gcal_sync {
-  source                = "amancevice/facebook-gcal-sync/aws"
-  facebook_page_id      = "<facebook-page-id>"
-  facebook_secret       = "<facebook-access-token-secret>"
-  google_calendar_id    = "<google-calendar-id>"
-  google_secret         = "<google-service-acct-secret>"
+  source               = "amancevice/facebook-gcal-sync/aws"
+  facebook_page_id     = "<facebook-page-id>"
+  facebook_secret_name = "${module.secrets.facebook_secret_name}"
+  google_calendar_id   = "<google-calendar-id>"
+  google_secret_name   = "${module.secrets.google_secret_name}"
 }
 ```
 

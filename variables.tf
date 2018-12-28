@@ -22,7 +22,7 @@ variable facebook_page_id {
   description = "facebook Page ID."
 }
 
-variable facebook_secret {
+variable facebook_secret_name {
   description = "facebook SecretsManager secret name."
 }
 
@@ -30,7 +30,7 @@ variable google_calendar_id {
   description = "Google Calendar ID."
 }
 
-variable google_secret {
+variable google_secret_name {
   description = "Google SecretsManager secret name."
 }
 

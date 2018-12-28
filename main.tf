@@ -40,11 +40,11 @@ data aws_iam_policy_document inline {
 }
 
 data aws_secretsmanager_secret facebook {
-  name = "${var.facebook_secret}"
+  name = "${var.facebook_secret_name}"
 }
 
 data aws_secretsmanager_secret google {
-  name = "${var.google_secret}"
+  name = "${var.google_secret_name}"
 }
 
 resource aws_cloudwatch_event_rule rule {
