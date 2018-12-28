@@ -1,9 +1,3 @@
-provider aws {
-  profile = "bdsa"
-  region  = "us-east-1"
-  version = "~> 1.51"
-}
-
 data aws_iam_policy_document assume_role {
   statement {
     actions = ["sts:AssumeRole"]
