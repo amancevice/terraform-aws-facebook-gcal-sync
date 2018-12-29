@@ -2,13 +2,17 @@
 
 Synchronize facebook page events with Google Calendar.
 
+## Prerequisites
+
+Before beginning you will need to create and configure a [facebook app](https://github.com/amancevice/fest/blob/master/docs/facebook.md#facebook) and use it to acquire a page access token for Graph API.
+
+You will also need to set up a Google [service account](https://github.com/amancevice/fest/blob/master/docs/google.md#google) to acquire a credentials file to authenticate with Google APIs.
+
+It is expected that you use the facebook access token and Google service account credenetials to create AWS SecretsManager secrets using the `facebook-gcal-sync-secrets` module described below.
+
 ## Usage
 
-It is expected that you have created two AWS SecretsManager secrets.
-
-One should contain your facebook Graph API access token as a string (not JSON).
-
-The other should contain you Google Service Account credentials JSON.
+You may create both modules in the same project, but separating them into different projects will enable collaboration on the core application without having to distribute the facebook/Google credentials to each collaborator.
 
 ```terraform
 module secrets {
