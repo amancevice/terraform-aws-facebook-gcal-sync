@@ -1,10 +1,10 @@
 variable create_event_target {
-  description = "Create CloudWatch event target."
+  description = "Create CloudWatch event target"
   default     = false
 }
 
 variable event_rule_is_enabled {
-  description = "Flag to enable/disable CloudWatch event rule."
+  description = "Flag to enable/disable CloudWatch event rule"
   default     = true
 }
 
@@ -14,32 +14,33 @@ variable event_rule_schedule_expression {
 }
 
 variable event_target_input {
-  description = "CloudWatch event target input JSON."
-  default     = "{}"
+  description = "CloudWatch event target input JSON"
+  type        = map(string)
+  default     = {}
 }
 
 variable facebook_page_id {
-  description = "facebook Page ID."
+  description = "facebook Page ID"
 }
 
 variable facebook_secret_name {
-  description = "facebook SecretsManager secret name."
+  description = "facebook SecretsManager secret name"
 }
 
 variable google_calendar_id {
-  description = "Google Calendar ID."
+  description = "Google Calendar ID"
 }
 
 variable google_secret_name {
-  description = "Google SecretsManager secret name."
+  description = "Google SecretsManager secret name"
 }
 
 variable lambda_function_name {
-  description = "Lambda function name."
+  description = "Lambda function name"
   default     = "facebook-gcal-sync"
 }
 
 variable log_group_retention_in_days {
-  description = "CloudWatch Log Group retention period in days."
+  description = "CloudWatch Log Group retention period in days"
   default     = 30
 }
