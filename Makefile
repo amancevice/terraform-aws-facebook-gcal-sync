@@ -1,22 +1,41 @@
-requirements = $(shell cat requirements.txt | tr '\n' ' ')
+REPO      := amancevice/terraform-aws-facebook-gcal-sync
+STAGES    := lock zip validate
+CLEANS    := $(foreach STAGE,$(STAGES),clean-$(STAGE))
+PYTHON    := $(shell cat .python-version | cut -d'.' -f1,2)
+TIMESTAMP := $(shell date +%s)
 
-.PHONY: lock package clean
+.PHONY: default clean clobber $(CLEANS)
 
-Pipfile.lock: Pipfile
-	pipenv lock
-	pipenv lock -r > requirements.txt
-	pipenv lock -r -d > requirements-dev.txt
+default: Pipfile.lock package.zip .docker/validate
 
-lock: Pipfile.lock
+.docker:
+	mkdir -p $@
 
-build: lock
-	docker-compose run --rm build -t /var/task $(requirements)
-	cp lambda.py build/
+.docker/lock: Pipfile
+.docker/zip: .docker/lock lambda.py
+.docker/validate: .docker/zip
+.docker/%: | .docker
+	docker build \
+	--build-arg PYTHON=$(PYTHON) \
+	--iidfile $@-$(TIMESTAMP) \
+	--tag $(REPO):$* \
+	--tag $(REPO):$*-$(TIMESTAMP) \
+	--target $* \
+	.
+	cp $@-$(TIMESTAMP) $@
 
-package: build
-	docker-compose run --rm -T package > package.zip
-	git add package.zip
+Pipfile.lock: .docker/lock
+	docker run --rm --entrypoint cat $$(cat $<) $@ > $@
 
-clean:
-	rm -rf build
-	docker-compose down
+package.zip: .docker/zip
+	docker run --rm --entrypoint cat $$(cat $<) $@ > $@
+
+clean: $(CLEANS) | .docker
+	rm -rf .docker
+
+clobber: clean
+	docker image ls $(REPO) --quiet | xargs docker image rm --force
+
+$(CLEANS): clean-%:
+	docker image ls $(REPO):$*-* --format '{{.Repository}}:{{.Tag}}' | xargs docker image rm
+	rm -rf .docker/$*-*
