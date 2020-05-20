@@ -1,12 +1,10 @@
-REPO      := amancevice/terraform-aws-facebook-gcal-sync
-STAGES    := lock zip validate
-CLEANS    := $(foreach STAGE,$(STAGES),clean-$(STAGE))
-PYTHON    := $(shell cat .python-version | cut -d'.' -f1,2)
-TIMESTAMP := $(shell date +%s)
+REPO   := amancevice/terraform-aws-facebook-gcal-sync
+STAGES := lock zip validate
+PYTHON := $(shell cat .python-version | cut -d'.' -f1,2)
 
-.PHONY: default clean clobber $(CLEANS)
+.PHONY: default clean clobber $(STAGES)
 
-default: Pipfile.lock package.zip .docker/validate
+default: Pipfile.lock package.zip validate
 
 .docker:
 	mkdir -p $@
@@ -17,12 +15,10 @@ default: Pipfile.lock package.zip .docker/validate
 .docker/%: | .docker
 	docker build \
 	--build-arg PYTHON=$(PYTHON) \
-	--iidfile $@-$(TIMESTAMP) \
+	--iidfile $@ \
 	--tag $(REPO):$* \
-	--tag $(REPO):$*-$(TIMESTAMP) \
 	--target $* \
 	.
-	cp $@-$(TIMESTAMP) $@
 
 Pipfile.lock: .docker/lock
 	docker run --rm --entrypoint cat $$(cat $<) $@ > $@
@@ -30,12 +26,10 @@ Pipfile.lock: .docker/lock
 package.zip: .docker/zip
 	docker run --rm --entrypoint cat $$(cat $<) $@ > $@
 
-clean: $(CLEANS) | .docker
+clean:
 	rm -rf .docker
 
 clobber: clean
 	docker image ls $(REPO) --quiet | xargs docker image rm --force
 
-$(CLEANS): clean-%:
-	docker image ls $(REPO):$*-* --format '{{.Repository}}:{{.Tag}}' | xargs docker image rm
-	rm -rf .docker/$*-*
+$(STAGES): %: .docker/%
