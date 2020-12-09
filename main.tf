@@ -2,7 +2,7 @@ terraform {
   required_version = "~> 0.12"
 }
 
-data aws_iam_policy_document assume_role {
+data "aws_iam_policy_document" "assume_role" {
   statement {
     actions = [
       "sts:AssumeRole",
@@ -19,7 +19,7 @@ data aws_iam_policy_document assume_role {
   }
 }
 
-data aws_iam_policy_document inline {
+data "aws_iam_policy_document" "inline" {
   statement {
     sid = "DecryptSecrets"
 
@@ -57,15 +57,15 @@ data aws_iam_policy_document inline {
   }
 }
 
-data aws_secretsmanager_secret facebook {
+data "aws_secretsmanager_secret" "facebook" {
   name = var.facebook_secret_name
 }
 
-data aws_secretsmanager_secret google {
+data "aws_secretsmanager_secret" "google" {
   name = var.google_secret_name
 }
 
-resource aws_cloudwatch_event_rule rule {
+resource "aws_cloudwatch_event_rule" "rule" {
   description         = "Sync facebook events with Google Calendar"
   is_enabled          = var.event_rule_is_enabled
   name                = aws_lambda_function.lambda.function_name
@@ -73,31 +73,31 @@ resource aws_cloudwatch_event_rule rule {
   schedule_expression = var.event_rule_schedule_expression
 }
 
-resource aws_cloudwatch_event_target target {
+resource "aws_cloudwatch_event_target" "target" {
   count = var.create_event_target
   arn   = aws_lambda_function.lambda.arn
   input = jsonencode(var.event_target_input)
   rule  = aws_cloudwatch_event_rule.rule.name
 }
 
-resource aws_cloudwatch_log_group logs {
+resource "aws_cloudwatch_log_group" "logs" {
   name              = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
   retention_in_days = var.log_group_retention_in_days
 }
 
-resource aws_iam_role role {
+resource "aws_iam_role" "role" {
   description        = "Access to facebook, Google, and AWS resources."
   name               = var.lambda_function_name
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
-resource aws_iam_role_policy inline {
+resource "aws_iam_role_policy" "inline" {
   name   = aws_iam_role.role.name
   policy = data.aws_iam_policy_document.inline.json
   role   = aws_iam_role.role.name
 }
 
-resource aws_lambda_function lambda {
+resource "aws_lambda_function" "lambda" {
   description      = "Synchronize facebook page events with Google Calendar"
   filename         = "${path.module}/package.zip"
   function_name    = var.lambda_function_name
@@ -117,7 +117,7 @@ resource aws_lambda_function lambda {
   }
 }
 
-resource aws_lambda_permission trigger {
+resource "aws_lambda_permission" "trigger" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
   principal     = "events.amazonaws.com"
