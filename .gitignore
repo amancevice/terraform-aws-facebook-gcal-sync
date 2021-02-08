@@ -8,5 +8,7 @@
 # .tfvars files
 *.tfvars
 
-.docker/
+**/__pycache__/*
+*.iid
 .env
+.terraform.lock.hcl
