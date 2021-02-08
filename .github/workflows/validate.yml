@@ -2,13 +2,11 @@ name: validate
 on:
   pull_request:
   push:
-    branches:
-    - master
   schedule:
-  - cron: "11 21 * * *"
+    - cron: '11 21 * * *'
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - run: make
+      - uses: actions/checkout@v2
+      - run: make
