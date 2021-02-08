@@ -11,9 +11,7 @@ terraform {
 
 data "aws_iam_policy_document" "assume_role" {
   statement {
-    actions = [
-      "sts:AssumeRole",
-    ]
+    actions = ["sts:AssumeRole"]
 
     principals {
       type = "Service"
@@ -28,11 +26,8 @@ data "aws_iam_policy_document" "assume_role" {
 
 data "aws_iam_policy_document" "inline" {
   statement {
-    sid = "DecryptSecrets"
-
-    actions = [
-      "secretsmanager:GetSecretValue",
-    ]
+    sid     = "DecryptSecrets"
+    actions = ["secretsmanager:GetSecretValue"]
 
     resources = [
       data.aws_secretsmanager_secret.facebook.arn,
@@ -41,15 +36,9 @@ data "aws_iam_policy_document" "inline" {
   }
 
   statement {
-    sid = "InvokeLambdas"
-
-    actions = [
-      "lambda:InvokeFunction",
-    ]
-
-    resources = [
-      aws_lambda_function.lambda.arn,
-    ]
+    sid       = "InvokeLambdas"
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.lambda.arn]
   }
 
   statement {
@@ -108,7 +97,7 @@ resource "aws_lambda_function" "lambda" {
   description      = "Synchronize facebook page events with Google Calendar"
   filename         = "${path.module}/package.zip"
   function_name    = var.lambda_function_name
-  handler          = "lambda.handler"
+  handler          = "index.handler"
   role             = aws_iam_role.role.arn
   runtime          = "python3.8"
   source_code_hash = filebase64sha256("${path.module}/package.zip")
