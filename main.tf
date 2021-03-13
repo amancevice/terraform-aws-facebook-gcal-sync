@@ -10,9 +10,9 @@ terraform {
 }
 
 locals {
-  create_event_target = var.create_event_target
-  event_target_input  = var.event_target_input
-  kms_key_alias       = var.kms_key_alias
+  event_target = {
+    input = var.event_target_input
+  }
 
   event_rule = {
     is_enabled          = var.event_rule_is_enabled
@@ -73,9 +73,8 @@ resource "aws_cloudwatch_event_rule" "rule" {
 }
 
 resource "aws_cloudwatch_event_target" "target" {
-  count = local.create_event_target
   arn   = aws_lambda_function.lambda.arn
-  input = jsonencode(local.event_target_input)
+  input = jsonencode(local.event_target.input)
   rule  = aws_cloudwatch_event_rule.rule.name
 }
 

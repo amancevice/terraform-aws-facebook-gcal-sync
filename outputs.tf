@@ -1,29 +1,24 @@
-output "event_rule_arn" {
-  description = "CloudWatch Event Rule ARN"
-  value       = aws_cloudwatch_event_rule.rule.arn
+output "event_rule" {
+  description = "CloudWatch Event Rule"
+  value       = aws_cloudwatch_event_rule.rule
 }
 
-output "event_rule_name" {
-  description = "CloudWatch Event Rule name"
-  value       = aws_cloudwatch_event_rule.rule.name
+output "facebook_secret" {
+  description = "facebook SecretsManager secret"
+  value       = aws_secretsmanager_secret.facebook_secret
 }
 
-output "lambda_function_arn" {
-  description = "Lambda function ARN"
-  value       = aws_lambda_function.lambda.arn
+output "google_secret" {
+  description = "Google service account SecretsManager secret"
+  value       = aws_secretsmanager_secret.google_secret
 }
 
-output "lambda_function_name" {
-  description = "Lambda function name"
-  value       = aws_lambda_function.lambda.function_name
+output "iam_role" {
+  description = "Lambda IAM role"
+  value       = aws_iam_role.role
 }
 
-output "lambda_role_arn" {
-  description = "Lambda role ARN"
-  value       = aws_iam_role.role.arn
-}
-
-output "lambda_role_name" {
-  description = "Lambda role name"
-  value       = aws_iam_role.role.name
+output "lambda_function" {
+  description = "Lambda function"
+  value       = aws_lambda_function.lambda
 }

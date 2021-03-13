@@ -1,8 +1,3 @@
-variable "create_event_target" {
-  description = "Create CloudWatch event target"
-  default     = false
-}
-
 variable "event_rule_is_enabled" {
   description = "Flag to enable/disable CloudWatch event rule"
   default     = true

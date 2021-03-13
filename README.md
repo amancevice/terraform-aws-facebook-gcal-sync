@@ -3,7 +3,6 @@
 [![terraform](https://img.shields.io/github/v/tag/amancevice/terraform-aws-facebook-gcal-sync?color=62f&label=version&logo=terraform&style=flat-square)](https://registry.terraform.io/modules/amancevice/serverless-pypi/aws)
 [![build](https://img.shields.io/github/workflow/status/amancevice/terraform-aws-facebook-gcal-sync/validate?logo=github&style=flat-square)](https://github.com/amancevice/terraform-aws-facebook-gcal-sync/actions)
 
-
 Synchronize facebook page events with Google Calendar.
 
 ## Prerequisites
@@ -19,42 +18,26 @@ It is expected that you use the facebook access token and Google service account
 You may create both modules in the same project, but separating them into different projects will enable collaboration on the core application without having to distribute the facebook/Google credentials to each collaborator.
 
 ```terraform
-module secrets {
-  source                  = "amancevice/facebook-gcal-sync-secrets/aws"
-  facebook_page_token     = "<your-page-access-token>"
-  facebook_secret_name    = "facebook/MyPage"
-  google_secret_name      = "google/MySvcAcct"
-  google_credentials_file = "<path-to-credentials-JSON-file>"
+# WARNING Be extremely cautious when using secret versions in terraform
+# NEVER store secrets in plaintext and encrypt your remote state
+# I recommend applying the secret versions in a separate workspace with no remote backend.
+resource "aws_secretsmanager_secret_version" "facebook" {
+  secret_id     = module.facebook_gcal_sync.facebook_secret.id
+  secret_string = "my-facebook-app-token"
+}
+
+resource "aws_secretsmanager_secret_version" "google" {
+  secret_id     = module.facebook_gcal_sync.google_secret.id
+  secret_string = file("./path/to/my/svc/acct/creds.json")
 }
 
 module facebook_gcal_sync {
-  source               = "amancevice/facebook-gcal-sync/aws"
+  source  = "amancevice/facebook-gcal-sync/aws"
+  version = "~> 1.0"
+
   facebook_page_id     = "<facebook-page-id>"
-  facebook_secret_name = "${module.secrets.facebook_secret_name}"
+  facebook_secret_name = "facebook/my-app"
   google_calendar_id   = "<google-calendar-id>"
-  google_secret_name   = "${module.secrets.google_secret_name}"
-}
-```
-
-By default, a CloudWatch event rule is created to facilitate invoking the sync function, but no target is created.
-
-If desired, you may enable a CloudWatch event target to invoke the sync function on a schedule:
-
-```terraform
-locals {
-  event_target_input {
-    Comment = "This input is optional."
-  }
-}
-
-module facebook_gcal_sync {
-  source                         = "amancevice/facebook-gcal-sync/aws"
-  facebook_page_id               = "<facebook-page-id>"
-  facebook_secret                = "<facebook-access-token-secret>"
-  google_calendar_id             = "<google-calendar-id>"
-  google_secret                  = "<google-service-acct-secret>"
-  create_event_target            = true
-  event_target_input             = "${jsonencode(local.event_target_input)}"
-  event_rule_schedule_expression = "rate(1 hour)"
+  google_secret_name   = "google/my-svc-acct"
 }
 ```
