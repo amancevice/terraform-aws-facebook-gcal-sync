@@ -6,12 +6,12 @@ ENDPOINT = http://$$(REPO=$(REPO) docker-compose port lambda 8080)/2015-03-31/fu
 all: validate
 
 clean: down
-	rm -rf package.iid
+	rm -rf Dockerfile.iid
 
 clobber: clean
 	REPO=$(REPO) docker-compose down --rmi all --volumes
 
-down:
+down: .env
 	REPO=$(REPO) docker-compose down
 
 shell: .env Dockerfile.iid
@@ -21,7 +21,7 @@ up: .env Dockerfile.iid
 	REPO=$(REPO) docker-compose up --detach lambda
 	@echo $(ENDPOINT)
 
-validate: package.zip .terraform.lock.hcl
+validate: package.zip | .terraform
 	terraform fmt -check
 	AWS_REGION=us-east-1 terraform validate
 
@@ -29,7 +29,7 @@ zip: package.zip
 
 .PHONY: all clean clobber down shell up validate zip
 
-package.zip: Dockerfile.iid Pipfile.lock
+package.zip: Pipfile.lock index.py | Dockerfile.iid
 	docker run --rm --entrypoint cat $(REPO) $@ > $@
 
 Pipfile.lock: Pipfile | Dockerfile.iid
@@ -38,5 +38,8 @@ Pipfile.lock: Pipfile | Dockerfile.iid
 Dockerfile.iid: Dockerfile Pipfile index.py
 	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --iidfile $@ --tag $(REPO) .
 
-.terraform.lock.hcl:
+.terraform:
 	terraform init
+
+.env:
+	touch $@

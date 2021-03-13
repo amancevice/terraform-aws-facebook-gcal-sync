@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import sys
 
 import boto3
 import facebook
@@ -27,48 +26,76 @@ class SuppressFilter(logging.Filter):
 
 class LambdaLoggerAdapter(logging.LoggerAdapter):
     """
-    Lambda logger adapter
+    Lambda logger adapter.
     """
-    LOG_LEVEL = os.getenv('LOG_LEVEL') or 'INFO'
-    LOG_FORMAT = os.getenv('LOG_FORMAT') \
-        or '%(levelname)s %(reqid)s %(message)s'
-
     def __init__(self, name, level=None, format_string=None):
         # Get logger, formatter
         logger = logging.getLogger(name)
-        formatter = logging.Formatter(format_string or self.LOG_FORMAT)
 
-        # Set formatter for this logerr's handler(s)
-        for handler in logger.handlers:  # pragma: no cover
-            handler.setFormatter(formatter)
-        else:
-            handler = logging.StreamHandler(sys.stdout)
+        # Set log level
+        logger.setLevel(level or LOG_LEVEL)
+
+        # Set handler if necessary
+        if not logger.handlers:  # and not logger.parent.handlers:
+            formatter = logging.Formatter(format_string or LOG_FORMAT)
+            handler = logging.StreamHandler()
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         # Suppress AWS logging for this logger
         for handler in logging.root.handlers:
-            handler.addFilter(SuppressFilter(name))
+            logFilter = SuppressFilter(name)
+            handler.addFilter(logFilter)
 
         # Initialize adapter with null RequestId
-        super().__init__(logger, dict(reqid='-'))
+        super().__init__(logger, dict(awsRequestId='-'))
 
-        # Set log level
-        self.setLevel(level or self.LOG_LEVEL)
+    def attach(self, handler):
+        """
+        Decorate Lambda handler to attach logger to AWS request.
+
+        :Example:
+
+        >>> logger = lambo.getLogger(__name__)
+        >>>
+        >>> @logger.attach
+        ... def handler(event, context):
+        ...     logger.info('Hello, world!')
+        ...     return {'ok': True}
+        ...
+        >>> handler({'fizz': 'buzz'})
+        >>> # => INFO RequestId: {awsRequestId} EVENT {"fizz": "buzz"}
+        >>> # => INFO RequestId: {awsRequestId} Hello, world!
+        >>> # => INFO RequestId: {awsRequestId} RETURN {"ok": True}
+        """
+        def wrapper(event=None, context=None):
+            try:
+                self.addContext(context)
+                self.info('EVENT %s', json.dumps(event, default=str))
+                result = handler(event, context)
+                self.info('RETURN %s', json.dumps(result, default=str))
+                return result
+            finally:
+                self.dropContext()
+        return wrapper
 
     def addContext(self, context=None):
         """
-        Add runtime context to logger
+        Add runtime context to logger.
         """
         try:
-            reqid = f'RequestId: {context.aws_request_id}'
-            self.extra.update(reqid=reqid)
-        except AttributeError:  # pragma: no cover
-            pass
+            awsRequestId = f'RequestId: {context.aws_request_id}'
+        except AttributeError:
+            awsRequestId = '-'
+        self.extra.update(awsRequestId=awsRequestId)
+        return self
 
-    def setup(self, event, context):
-        self.addContext(context)
-        self.info('EVENT %s', json.dumps(event))
+    def dropContext(self):
+        """
+        Drop runtime context from logger.
+        """
+        self.extra.update(awsRequestId='-')
+        return self
 
 
 def secret(client, **params):
@@ -86,13 +113,18 @@ def json_secret(client, **params):
     return json.loads(secret(client, **params))
 
 
-logger = LambdaLoggerAdapter('facebook-gcal-sync')
+LOG_LEVEL = os.getenv('LAMBO_LOG_LEVEL') or logging.INFO
+LOG_FORMAT = os.getenv('LAMBO_LOG_FORMAT') \
+    or '%(levelname)s %(awsRequestId)s %(message)s'
 
 FACEBOOK_SECRET = os.environ['FACEBOOK_SECRET']
 GOOGLE_SECRET = os.environ['GOOGLE_SECRET']
 
 FACEBOOK_PAGE_ID = os.getenv('FACEBOOK_PAGE_ID')
 GOOGLE_CALENDAR_ID = os.getenv('GOOGLE_CALENDAR_ID')
+
+# Init Logger
+logger = LambdaLoggerAdapter('facebook-gcal-sync')
 
 # Get facebook/Google secrets
 SECRETSMANAGER = boto3.client('secretsmanager')
@@ -111,9 +143,8 @@ CALENDARAPI = discovery.build(
 )
 
 
+@logger.attach
 def handler(event, context=None):
-    logger.setup(event, context)
-
     # Get args from event
     dryrun = event.get('dryrun') or False
     page_id = event.get('pageId') or FACEBOOK_PAGE_ID
