@@ -9,6 +9,102 @@ terraform {
   }
 }
 
+locals {
+  create_event_target = var.create_event_target
+  event_target_input  = var.event_target_input
+  kms_key_alias       = var.kms_key_alias
+
+  event_rule = {
+    is_enabled          = var.event_rule_is_enabled
+    schedule_expression = var.event_rule_schedule_expression
+  }
+
+  facebook_secret = {
+    description = var.facebook_secret_description
+    name        = var.facebook_secret_name
+    tags        = var.facebook_secret_tags
+  }
+
+  google_secret = {
+    description = var.google_secret_description
+    name        = var.google_secret_name
+    tags        = var.google_secret_tags
+  }
+
+  kms_key = {
+    alias                   = var.kms_key_alias
+    deletion_window_in_days = var.kms_key_deletion_window_in_days
+    description             = var.kms_key_description
+    enable_key_rotation     = var.kms_key_enable_key_rotation
+    is_enabled              = var.kms_key_is_enabled
+    policy_document         = var.kms_key_policy_document
+    tags                    = var.kms_key_tags
+    usage                   = var.kms_key_usage
+  }
+
+  lambda = {
+    description   = var.lambda_description
+    filename      = "${path.module}/package.zip"
+    function_name = var.lambda_function_name
+    runtime       = var.lambda_runtime
+    timeout       = var.lambda_timeout
+
+    environment_variables = {
+      FACEBOOK_PAGE_ID   = var.facebook_page_id
+      FACEBOOK_SECRET    = aws_secretsmanager_secret.facebook_secret.name
+      GOOGLE_CALENDAR_ID = var.google_calendar_id
+      GOOGLE_SECRET      = aws_secretsmanager_secret.google_secret.name
+    }
+  }
+
+  log_group = {
+    retention_in_days = var.log_group_retention_in_days
+  }
+}
+
+# EVENTBRIDGE
+
+resource "aws_cloudwatch_event_rule" "rule" {
+  description         = "Sync facebook events with Google Calendar"
+  is_enabled          = local.event_rule.is_enabled
+  name                = aws_lambda_function.lambda.function_name
+  role_arn            = aws_iam_role.role.arn
+  schedule_expression = local.event_rule.schedule_expression
+}
+
+resource "aws_cloudwatch_event_target" "target" {
+  count = local.create_event_target
+  arn   = aws_lambda_function.lambda.arn
+  input = jsonencode(local.event_target_input)
+  rule  = aws_cloudwatch_event_rule.rule.name
+}
+
+# LAMBDA :: FUNCTION
+
+resource "aws_lambda_function" "lambda" {
+  description      = local.lambda.description
+  filename         = local.lambda.filename
+  function_name    = local.lambda.function_name
+  handler          = "index.handler"
+  role             = aws_iam_role.role.arn
+  runtime          = local.lambda.runtime
+  source_code_hash = filebase64sha256(local.lambda.filename)
+  timeout          = local.lambda.timeout
+
+  environment {
+    variables = local.lambda.environment_variables
+  }
+}
+
+resource "aws_lambda_permission" "trigger" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.rule.arn
+}
+
+# LAMBDA :: IAM
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -30,8 +126,8 @@ data "aws_iam_policy_document" "inline" {
     actions = ["secretsmanager:GetSecretValue"]
 
     resources = [
-      data.aws_secretsmanager_secret.facebook.arn,
-      data.aws_secretsmanager_secret.google.arn,
+      aws_secretsmanager_secret.facebook_secret.arn,
+      aws_secretsmanager_secret.google_secret.arn,
     ]
   }
 
@@ -53,37 +149,9 @@ data "aws_iam_policy_document" "inline" {
   }
 }
 
-data "aws_secretsmanager_secret" "facebook" {
-  name = var.facebook_secret_name
-}
-
-data "aws_secretsmanager_secret" "google" {
-  name = var.google_secret_name
-}
-
-resource "aws_cloudwatch_event_rule" "rule" {
-  description         = "Sync facebook events with Google Calendar"
-  is_enabled          = var.event_rule_is_enabled
-  name                = aws_lambda_function.lambda.function_name
-  role_arn            = aws_iam_role.role.arn
-  schedule_expression = var.event_rule_schedule_expression
-}
-
-resource "aws_cloudwatch_event_target" "target" {
-  count = var.create_event_target
-  arn   = aws_lambda_function.lambda.arn
-  input = jsonencode(var.event_target_input)
-  rule  = aws_cloudwatch_event_rule.rule.name
-}
-
-resource "aws_cloudwatch_log_group" "logs" {
-  name              = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
-  retention_in_days = var.log_group_retention_in_days
-}
-
 resource "aws_iam_role" "role" {
   description        = "Access to facebook, Google, and AWS resources."
-  name               = var.lambda_function_name
+  name               = local.lambda.function_name
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
@@ -93,29 +161,40 @@ resource "aws_iam_role_policy" "inline" {
   role   = aws_iam_role.role.name
 }
 
-resource "aws_lambda_function" "lambda" {
-  description      = "Synchronize facebook page events with Google Calendar"
-  filename         = "${path.module}/package.zip"
-  function_name    = var.lambda_function_name
-  handler          = "index.handler"
-  role             = aws_iam_role.role.arn
-  runtime          = "python3.8"
-  source_code_hash = filebase64sha256("${path.module}/package.zip")
-  timeout          = 30
+# LAMBDA :: LOGS
 
-  environment {
-    variables = {
-      FACEBOOK_PAGE_ID   = var.facebook_page_id
-      FACEBOOK_SECRET    = data.aws_secretsmanager_secret.facebook.name
-      GOOGLE_CALENDAR_ID = var.google_calendar_id
-      GOOGLE_SECRET      = data.aws_secretsmanager_secret.google.name
-    }
-  }
+resource "aws_cloudwatch_log_group" "logs" {
+  name              = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
+  retention_in_days = local.log_group.retention_in_days
 }
 
-resource "aws_lambda_permission" "trigger" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.rule.arn
+# SECRETS
+
+resource "aws_kms_key" "key" {
+  deletion_window_in_days = local.kms_key.deletion_window_in_days
+  description             = local.kms_key.description
+  enable_key_rotation     = local.kms_key.enable_key_rotation
+  is_enabled              = local.kms_key.is_enabled
+  key_usage               = local.kms_key.usage
+  policy                  = local.kms_key.policy_document
+  tags                    = local.kms_key.tags
+}
+
+resource "aws_kms_alias" "alias" {
+  name          = local.kms_key.alias
+  target_key_id = aws_kms_key.key.key_id
+}
+
+resource "aws_secretsmanager_secret" "facebook_secret" {
+  description = local.facebook_secret.description
+  kms_key_id  = aws_kms_key.key.key_id
+  name        = local.facebook_secret.name
+  tags        = local.facebook_secret.tags
+}
+
+resource "aws_secretsmanager_secret" "google_secret" {
+  description = local.google_secret.description
+  kms_key_id  = aws_kms_key.key.key_id
+  name        = local.google_secret.name
+  tags        = local.google_secret.tags
 }
