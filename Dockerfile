@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION=3.8
 FROM amazon/aws-lambda-python:${PYTHON_VERSION}
-RUN yum install -y zip && pip install pipenv==2020.11.15
+RUN yum install -y zip && pip install pipenv==2021.5.29
 COPY . .
 RUN pipenv lock -r > requirements.txt
 RUN pipenv lock -r -d > requirements-dev.txt
