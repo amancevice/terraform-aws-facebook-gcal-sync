@@ -5,8 +5,12 @@ verify_ssl = true
 
 [packages]
 fest = "*"
+lambo = "*"
 
 [dev-packages]
 boto3 = "*"
 ipdb = "*"
 ipython = "*"
+
+[requires]
+python_version = "3.8"

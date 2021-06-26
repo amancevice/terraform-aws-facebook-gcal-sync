@@ -54,6 +54,7 @@ locals {
       FACEBOOK_SECRET    = aws_secretsmanager_secret.facebook_secret.name
       GOOGLE_CALENDAR_ID = var.google_calendar_id
       GOOGLE_SECRET      = aws_secretsmanager_secret.google_secret.name
+      PYTHONPATH         = "/var/task/python"
     }
   }
 

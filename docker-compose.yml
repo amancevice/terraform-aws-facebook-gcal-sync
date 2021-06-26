@@ -1,24 +1,16 @@
-version: '3.8'
+version: "3.8"
 volumes:
   root:
 services:
+  build:
+    build:
+      context: .
+      target: build
+    image: amancevice/facebook-gcal-sync:build
 
-  base: &base
+  test:
     build: .
-    image: ${REPO:-amancevice/facebook-gcal-sync}
-    network_mode: bridge
-
-  shell: &shell
-    <<: *base
-    command: bash
-    entrypoint: env
     env_file: .env
-    volumes:
-      - root:/root
-      - ~/.aws:/root/.aws:ro
-      - ./:/var/task
-
-  lambda:
-    <<: *base
+    image: amancevice/facebook-gcal-sync:test
     ports:
       - 8080

@@ -1,25 +1,20 @@
-REPO           := amancevice/$(shell basename $$PWD)
-PYTHON_VERSION := 3.8
-
 ENDPOINT = http://$$(REPO=$(REPO) docker-compose port lambda 8080)/2015-03-31/functions/function/invocations
 
-all: validate
+all: validate down
+
+build: .env
+	docker-compose build
 
 clean: down
-	rm -rf Dockerfile.iid
 
 clobber: clean
-	REPO=$(REPO) docker-compose down --rmi all --volumes
+	docker-compose down --rmi all --volumes
 
 down: .env
-	REPO=$(REPO) docker-compose down
+	docker-compose down
 
-shell: .env Dockerfile.iid
-	REPO=$(REPO) docker-compose run --rm shell
-
-up: .env Dockerfile.iid
-	REPO=$(REPO) docker-compose up --detach lambda
-	@echo $(ENDPOINT)
+up: .env | build
+	docker-compose up --detach test
 
 validate: package.zip | .terraform
 	terraform fmt -check
@@ -27,16 +22,13 @@ validate: package.zip | .terraform
 
 zip: package.zip
 
-.PHONY: all clean clobber down shell up validate zip
+.PHONY: all build clean clobber down shell up validate zip
 
-package.zip: Pipfile.lock index.py | Dockerfile.iid
-	docker run --rm --entrypoint cat $(REPO) $@ > $@
+package.zip: Pipfile.lock | build
+	docker-compose run --rm --entrypoint cat build $@ > $@
 
-Pipfile.lock: Pipfile | Dockerfile.iid
-	docker run --rm --entrypoint cat $(REPO) $@ > $@
-
-Dockerfile.iid: Dockerfile Pipfile index.py
-	docker build --build-arg PYTHON_VERSION=$(PYTHON_VERSION) --iidfile $@ --tag $(REPO) .
+Pipfile.lock: Pipfile | build
+	docker-compose run --rm --entrypoint cat build $@ > $@
 
 .terraform:
 	terraform init
