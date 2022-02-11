@@ -12,3 +12,6 @@
 *.iid
 .env
 .terraform.lock.hcl
+
+build/
+requirements.txt
