@@ -1,3 +1,7 @@
+#################
+#   TERRAFORM   #
+#################
+
 terraform {
   required_version = "~> 1.0"
 
@@ -8,6 +12,10 @@ terraform {
     }
   }
 }
+
+##############
+#   LOCALS   #
+##############
 
 locals {
   event_target = {
@@ -44,7 +52,7 @@ locals {
 
   lambda = {
     description   = var.lambda_description
-    filename      = "${path.module}/package.zip"
+    filename      = "${path.module}/src/package.zip"
     function_name = var.lambda_function_name
     runtime       = var.lambda_runtime
     timeout       = var.lambda_timeout
@@ -63,7 +71,9 @@ locals {
   }
 }
 
-# EVENTBRIDGE
+###################
+#   EVENTBRIDGE   #
+###################
 
 resource "aws_cloudwatch_event_rule" "rule" {
   description         = "Sync facebook events with Google Calendar"
@@ -79,7 +89,9 @@ resource "aws_cloudwatch_event_target" "target" {
   rule  = aws_cloudwatch_event_rule.rule.name
 }
 
-# LAMBDA :: FUNCTION
+##########################
+#   LAMBDA :: FUNCTION   #
+##########################
 
 resource "aws_lambda_function" "lambda" {
   description      = local.lambda.description
@@ -103,7 +115,9 @@ resource "aws_lambda_permission" "trigger" {
   source_arn    = aws_cloudwatch_event_rule.rule.arn
 }
 
-# LAMBDA :: IAM
+#####################
+#   LAMBDA :: IAM   #
+#####################
 
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -161,14 +175,18 @@ resource "aws_iam_role_policy" "inline" {
   role   = aws_iam_role.role.name
 }
 
-# LAMBDA :: LOGS
+######################
+#   LAMBDA :: LOGS   #
+######################
 
 resource "aws_cloudwatch_log_group" "logs" {
   name              = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
   retention_in_days = local.log_group.retention_in_days
 }
 
-# SECRETS
+###############
+#   SECRETS   #
+###############
 
 resource "aws_kms_key" "key" {
   deletion_window_in_days = local.kms_key.deletion_window_in_days

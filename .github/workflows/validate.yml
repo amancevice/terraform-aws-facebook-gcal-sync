@@ -6,10 +6,10 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
-          python-version: 3.9
-      - uses: hashicorp/setup-terraform@v1
-      - run: pip install pipenv==2022.1.8
+          python-version: "3.9"
+      - uses: hashicorp/setup-terraform@v2
+      - run: pip install pipenv
       - run: make
