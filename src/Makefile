@@ -4,13 +4,17 @@ all: test build
 
 build: package.zip
 
+clean:
+	pipenv --rm
+	rm -f requirements.txt
+
 ipython: .venv
 	pipenv run ipython
 
 test: .venv
 	pipenv run black --check index.py
 
-.PHONY: all build ipython test
+.PHONY: all build clean ipython test
 
 package.zip: entrypoint index.py requirements.txt
 	docker container create --name $(CID) --entrypoint entrypoint public.ecr.aws/lambda/python
