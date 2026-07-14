@@ -1,3 +1,7 @@
+#################
+#   VARIABLES   #
+#################
+
 variable "event_rule_is_enabled" {
   description = "Flag to enable/disable CloudWatch event rule"
   default     = true

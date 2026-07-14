@@ -8,7 +8,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
 }
@@ -77,10 +77,10 @@ locals {
 
 resource "aws_cloudwatch_event_rule" "rule" {
   description         = "Sync facebook events with Google Calendar"
-  is_enabled          = local.event_rule.is_enabled
   name                = aws_lambda_function.lambda.function_name
   role_arn            = aws_iam_role.role.arn
   schedule_expression = local.event_rule.schedule_expression
+  state               = local.event_rule.is_enabled ? "ENABLED" : "DISABLED"
 }
 
 resource "aws_cloudwatch_event_target" "target" {
@@ -119,60 +119,59 @@ resource "aws_lambda_permission" "trigger" {
 #   LAMBDA :: IAM   #
 #####################
 
-data "aws_iam_policy_document" "assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type = "Service"
-
-      identifiers = [
-        "events.amazonaws.com",
-        "lambda.amazonaws.com",
-      ]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "inline" {
-  statement {
-    sid     = "DecryptSecrets"
-    actions = ["secretsmanager:GetSecretValue"]
-
-    resources = [
-      aws_secretsmanager_secret.facebook_secret.arn,
-      aws_secretsmanager_secret.google_secret.arn,
-    ]
-  }
-
-  statement {
-    sid       = "InvokeLambdas"
-    actions   = ["lambda:InvokeFunction"]
-    resources = [aws_lambda_function.lambda.arn]
-  }
-
-  statement {
-    sid       = "WriteLogs"
-    resources = ["*"]
-
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-  }
-}
-
 resource "aws_iam_role" "role" {
-  description        = "Access to facebook, Google, and AWS resources."
-  name               = local.lambda.function_name
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  description = "Access to facebook, Google, and AWS resources."
+  name        = local.lambda.function_name
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AssumeRole"
+      Effect = "Allow"
+      Action = "sts:AssumeRole"
+      Principal = {
+        Service = [
+          "events.amazonaws.com",
+          "lambda.amazonaws.com",
+        ]
+      }
+    }]
+  })
 }
 
 resource "aws_iam_role_policy" "inline" {
-  name   = aws_iam_role.role.name
-  policy = data.aws_iam_policy_document.inline.json
-  role   = aws_iam_role.role.name
+  name = aws_iam_role.role.name
+  role = aws_iam_role.role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "DecryptSecrets"
+        Effect = "Allow"
+        Action = "secretsmanager:GetSecretValue"
+        Resource = [
+          aws_secretsmanager_secret.facebook_secret.arn,
+          aws_secretsmanager_secret.google_secret.arn,
+        ]
+      },
+      {
+        Sid      = "InvokeLambdas"
+        Effect   = "Allow"
+        Action   = "lambda:InvokeFunction"
+        Resource = aws_lambda_function.lambda.arn
+      },
+      {
+        Sid      = "WriteLogs"
+        Effect   = "Allow"
+        Resource = "*"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+      }
+    ]
+  })
 }
 
 ######################

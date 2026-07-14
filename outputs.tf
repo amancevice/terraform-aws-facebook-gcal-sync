@@ -1,3 +1,7 @@
+###############
+#   OUTPUTS   #
+###############
+
 output "event_rule" {
   description = "CloudWatch Event Rule"
   value       = aws_cloudwatch_event_rule.rule
