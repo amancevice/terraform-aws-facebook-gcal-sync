@@ -109,7 +109,7 @@ variable "lambda_function_name" {
 
 variable "lambda_runtime" {
   description = "Lambda function runtime"
-  default     = "python3.13"
+  default     = "python3.14"
 }
 
 variable "lambda_timeout" {
